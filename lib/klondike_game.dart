@@ -34,7 +34,7 @@ class KlondikeGame extends FlameGame with HasTappableComponents {
       ..position = Vector2(cardWidth + 2 * cardGap, cardGap);
     final foundations = List.generate(
       4,
-      (i) => FoundationPile()
+      (i) => FoundationPile(i)
         ..size = cardSize
         ..position =
             Vector2((i + 3) * (cardWidth + cardGap) + cardGap, cardGap),
@@ -68,7 +68,13 @@ class KlondikeGame extends FlameGame with HasTappableComponents {
     ];
     cards.shuffle();
     world.addAll(cards);
-    cards.forEach((stock.acquireCard));
+    for (var i = 0; i < 7; i++) {
+      for (var j = i; j < 7; j++) {
+        piles[j].acquireCard(cards.removeLast());
+      }
+      piles[i].flipTopCard();
+    }
+    cards.forEach(stock.acquireCard);
   }
 }
 

@@ -61,6 +61,7 @@ class Card extends PositionComponent {
         super(size: KlondikeGame.cardSize);
 
   bool get isFaceUp => _faceup;
+  bool get isFaceDown => !_faceup;
   void flip() => _faceup = !_faceup;
 
   @override
