@@ -1,11 +1,12 @@
 import 'package:flame/components.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:hello_flame/abstracts/pile.dart';
 import 'package:hello_flame/components/suit.dart';
 import 'package:hello_flame/klondike_game.dart';
 
 import 'card.dart';
 
-class FoundationPile extends PositionComponent {
+class FoundationPile extends PositionComponent implements Pile {
   final List<Card> _cards = [];
   final Suit suit;
 
@@ -27,6 +28,7 @@ class FoundationPile extends PositionComponent {
     card.position = position;
     card.priority = _cards.length;
     _cards.add(card);
+    card.pile = this;
   }
 
   @override
@@ -39,5 +41,26 @@ class FoundationPile extends PositionComponent {
       size: Vector2.all(KlondikeGame.cardWidth * 0.6),
       overridePaint: _suitPaint,
     );
+  }
+
+  @override
+  bool canMoveCard(Card card) => _cards.isNotEmpty && card == _cards.last;
+
+  @override
+  bool canAcceptCard(Card card) {
+    final topCardRank = _cards.isEmpty ? 0 : _cards.last.rank.value;
+    return card.suit == suit && card.rank.value == topCardRank + 1;
+  }
+
+  @override
+  void removeCard(Card card) {
+    assert(canMoveCard(card));
+    _cards.removeLast();
+  }
+
+  @override
+  void returnCard(Card card) {
+    card.position = position;
+    card.priority = _cards.indexOf(card);
   }
 }

@@ -1,15 +1,19 @@
 import 'dart:math';
 
 import 'package:flame/components.dart';
+import 'package:flame/experimental.dart';
+import 'package:flame/game.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:hello_flame/abstracts/pile.dart';
 import 'package:hello_flame/components/rank.dart';
 import 'package:hello_flame/components/suit.dart';
 import 'package:hello_flame/klondike_game.dart';
 
-class Card extends PositionComponent {
+class Card extends PositionComponent with DragCallbacks {
   final Rank rank;
   final Suit suit;
   bool _faceup;
+  Pile? pile;
 
   //renderBack() properties
   static final Paint backBackgroundPaint = Paint()
@@ -53,6 +57,8 @@ class Card extends PositionComponent {
     ..paint = blueFilter;
   static late final Sprite blackKing = klondikeSprite(3105, 532, 407, 549)
     ..paint = blueFilter;
+
+  bool _isDragging = false;
 
   Card(int intRank, int intSuit)
       : rank = Rank.fromInt(intRank),
@@ -203,5 +209,45 @@ class Card extends PositionComponent {
     if (rotate) {
       canvas.restore();
     }
+  }
+
+  @override
+  void onDragStart(DragStartEvent event) {
+    if (pile?.canMoveCard(this) ?? false) {
+      _isDragging = true;
+      priority = 100;
+    }
+  }
+
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    if (!_isDragging) {
+      return;
+    }
+    final cameraZoom = (findGame()! as FlameGame)
+        .firstChild<CameraComponent>()!
+        .viewfinder
+        .zoom;
+    position += event.delta / cameraZoom;
+  }
+
+  @override
+  void onDragEnd(DragEndEvent event) {
+    if (!_isDragging) {
+      return;
+    }
+    _isDragging = false;
+    final dropPiles = parent!
+        .componentsAtPoint(position + size / 2)
+        .whereType<Pile>()
+        .toList();
+    if (dropPiles.isNotEmpty) {
+      if (dropPiles.first.canAcceptCard(this)) {
+        pile!.removeCard(this);
+        dropPiles.first.acquireCard(this);
+        return;
+      }
+    }
+    pile!.returnCard(this);
   }
 }
