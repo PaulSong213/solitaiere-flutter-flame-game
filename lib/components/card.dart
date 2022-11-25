@@ -7,6 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:hello_flame/abstracts/pile.dart';
 import 'package:hello_flame/components/rank.dart';
 import 'package:hello_flame/components/suit.dart';
+import 'package:hello_flame/components/tableau_pile.dart';
 import 'package:hello_flame/klondike_game.dart';
 
 class Card extends PositionComponent with DragCallbacks {
@@ -14,6 +15,7 @@ class Card extends PositionComponent with DragCallbacks {
   final Suit suit;
   bool _faceup;
   Pile? pile;
+  final List<Card> attachedCards = [];
 
   //renderBack() properties
   static final Paint backBackgroundPaint = Paint()
@@ -216,6 +218,14 @@ class Card extends PositionComponent with DragCallbacks {
     if (pile?.canMoveCard(this) ?? false) {
       _isDragging = true;
       priority = 100;
+      if (pile is TableauPile) {
+        attachedCards.clear();
+        final extraCards = (pile! as TableauPile).cardsOnTop(this);
+        for (final card in extraCards) {
+          card.priority = attachedCards.length + 101;
+          attachedCards.add(card);
+        }
+      }
     }
   }
 
@@ -228,7 +238,9 @@ class Card extends PositionComponent with DragCallbacks {
         .firstChild<CameraComponent>()!
         .viewfinder
         .zoom;
-    position += event.delta / cameraZoom;
+    final delta = event.delta / cameraZoom;
+    position.add(delta);
+    attachedCards.forEach((card) => card.position.add(delta));
   }
 
   @override
@@ -245,9 +257,17 @@ class Card extends PositionComponent with DragCallbacks {
       if (dropPiles.first.canAcceptCard(this)) {
         pile!.removeCard(this);
         dropPiles.first.acquireCard(this);
+        if (attachedCards.isNotEmpty) {
+          attachedCards.forEach((card) => dropPiles.first.acquireCard(card));
+          attachedCards.clear();
+        }
         return;
       }
     }
     pile!.returnCard(this);
+    if (attachedCards.isNotEmpty) {
+      attachedCards.forEach((card) => pile!.removeCard(card));
+      attachedCards.clear();
+    }
   }
 }
